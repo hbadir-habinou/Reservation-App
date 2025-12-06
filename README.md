@@ -6,7 +6,7 @@
 ## 📌 Description du Projet
 
 Cette application permet la **réservation d’appartements meublés** via une plateforme **Web et Mobile**, enrichie par des fonctionnalités avancées d’Intelligence Artificielle (IA).  
-Elle offre une expérience complète aux **propriétaires** et aux **locataires**, avec un système de réservation sécurisé, des recommandations intelligentes et un assistant automatisé.
+Elle offre une expérience complète aux **propriétaires** et aux **locataires**, avec un système de réservation sécurisé, des recommandations intelligentess et un assistant automatisé.
 
 ---
 
