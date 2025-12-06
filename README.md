@@ -118,7 +118,7 @@ Elle offre une expérience complète aux **propriétaires** et aux **locataires*
 ### Logiciels
 - Application Web complète  
 - Applications mobiles (iOS / Android)  
-- Backend & microservicess  
+- Backend & microservices 
 - Services IA  
 
 ### Rapports
