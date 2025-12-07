@@ -10,34 +10,69 @@ jobs:
   update-trello:
     runs-on: ubuntu-latest
     steps:
+      # ÉTAPE 1 : Extraction sécurisée de l'ID (Correction du bug "EOF")
       - name: Extract Trello Card ID from commit message
         id: extract
+        env:
+          # On passe le message en variable d'environnement pour éviter les bugs de guillemets
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
-          # Cherche un pattern type [TRELLO-XXXXX] et garde XXXXX
+          echo "Processing commit message..."
+          # Regex plus robuste pour trouver [TRELLO-XXXXX]
           CARD_ID=$(echo "$COMMIT_MSG" | grep -oP '\[TRELLO-\K[^]]+' || echo "")
+          
+          if [ -z "$CARD_ID" ]; then
+            echo "Aucun ID Trello trouvé."
+          else
+            echo "ID trouvé : $CARD_ID"
+          fi
           echo "card_id=$CARD_ID" >> $GITHUB_OUTPUT
 
+      # ÉTAPE 2 : Ajouter un commentaire sur la carte
       - name: Add comment to Trello card
         if: steps.extract.outputs.card_id != ''
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          curl -X POST "https://api.trello.com/1/cards/${{ steps.extract.outputs.card_id }}/actions/comments" \
+          curl -s -X POST "https://api.trello.com/1/cards/${{ steps.extract.outputs.card_id }}/actions/comments" \
             -d "key=${{ secrets.TRELLO_API_KEY }}" \
             -d "token=${{ secrets.TRELLO_TOKEN }}" \
-            -d "text=Commit poussé par $$ {{ github.actor }}%0A $${{ github.event.head_commit.message }}%0A${{ github.event.head_commit.url }}"
+            --data-urlencode "text=Commit poussé par ${{ github.actor }} : $COMMIT_MSG"
 
-      - name: Move card to EN REVUE (main branch only)
+      # ÉTAPE 3 : Cocher TOUTES les cases des checklists (Nouveau !)
+      - name: Complete all checklists items
+        if: steps.extract.outputs.card_id != ''
+        run: |
+          # 1. Récupérer les checklists de la carte
+          CHECKLISTS_JSON=$(curl -s "https://api.trello.com/1/cards/${{ steps.extract.outputs.card_id }}/checklists?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}")
+          
+          # 2. Extraire tous les IDs des items non cochés (nécessite jq qui est installé par défaut)
+          ITEM_IDS=$(echo "$CHECKLISTS_JSON" | jq -r '.[].checkItems[].id')
+          
+          # 3. Boucler sur chaque item pour le marquer "complete"
+          for ITEM_ID in $ITEM_IDS; do
+            echo "Completing item: $ITEM_ID"
+            curl -s -X PUT "https://api.trello.com/1/cards/${{ steps.extract.outputs.card_id }}/checkItem/$ITEM_ID" \
+              -d "key=${{ secrets.TRELLO_API_KEY }}" \
+              -d "token=${{ secrets.TRELLO_TOKEN }}" \
+              -d "state=complete" > /dev/null
+          done
+
+      # ÉTAPE 4 : Déplacer la carte et la marquer comme Terminée (Date verte)
+      - name: Move card to FINISHED and Mark Complete
         if: github.ref == 'refs/heads/main' && steps.extract.outputs.card_id != ''
         run: |
-          curl -X PUT "https://api.trello.com/1/cards/${{ steps.extract.outputs.card_id }}" \
+          curl -s -X PUT "https://api.trello.com/1/cards/${{ steps.extract.outputs.card_id }}" \
             -d "key=${{ secrets.TRELLO_API_KEY }}" \
             -d "token=${{ secrets.TRELLO_TOKEN }}" \
-            -d "idList=${{ secrets.TRELLO_LIST_EN_REVUE }}"
+            -d "idList=${{ secrets.TRELLO_LIST_EN_REVUE }}" \
+            -d "dueComplete=true"
 
+      # ÉTAPE 5 : Notification Slack (Seulement si tu as réussi à avoir le token, sinon supprime ce bloc)
       - name: Send Slack notification
         if: github.ref == 'refs/heads/main' && steps.extract.outputs.card_id != ''
         uses: slackapi/slack-github-action@v1.24.0
         with:
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: C0A1XS2NF7G   # Remplacer par ton channel ID
-          slack-message: "La carte Trello <https://trello.com/c/${{ steps.extract.outputs.card_id }}|EN REVUE> vient d'arriver en revue !"
+          channel-id: C0A1XS2NF7G
+          slack-message: "✅ La carte Trello <https://trello.com/c/${{ steps.extract.outputs.card_id }}|TASK> a été mise à jour, checklists complétées et déplacée !"
