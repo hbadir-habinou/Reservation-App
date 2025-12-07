@@ -15,7 +15,7 @@ Elle offre une expérience complète aux **propriétaires** et aux **locataires*
 ### 👤 Pour les Locataires
 - Recherche d’appartements avec filtres avancés  
 - Réservation en ligne  
-- Paiement sécurisé  
+- Paiements sécurisés 
 - Recommandations personnalisées via IA  
 - Discussion avec un assistant intelligent  
 - Gestion de compte et historique  
