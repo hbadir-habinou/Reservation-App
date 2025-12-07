@@ -73,6 +73,9 @@ jobs:
         if: github.ref == 'refs/heads/main' && steps.extract.outputs.card_id != ''
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: C0A1XS2NF7G
+          # On ne met PAS le token ici
+          channel-id: 'C0A1XS2NF7G'
           slack-message: "✅ La carte Trello <https://trello.com/c/${{ steps.extract.outputs.card_id }}|TASK> a été mise à jour, checklists complétées et déplacée !"
+        env:
+          # C'est ICI qu'il faut mettre le token
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
