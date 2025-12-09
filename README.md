@@ -10,7 +10,7 @@ Elle offre une expérience complète aux **propriétaires** et aux **locataires*
 
 ---
 
-## 🚀 Fonctionnalités Principales
+## 🚀 Fonctionnalités Principaless
 
 ### 👤 Pour les Locataires
 - Recherche d’appartements avec filtres avancés  
